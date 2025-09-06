@@ -1,5 +1,5 @@
-import { CreateUserParams, SignInParams } from "@/type";
-import { Account, Avatars, Client, Databases, ID, Query } from "react-native-appwrite";
+import { CreateUserParams, GetMenuParams, SignInParams } from "@/type";
+import { Account, Avatars, Client, Databases, ID, Query, Storage, TablesDB } from "react-native-appwrite";
 
 export const appwriteConfig = {
     endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!,
@@ -7,18 +7,25 @@ export const appwriteConfig = {
     projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!,
     databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!,
     userCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USER_COLLECTION_ID!,
+    categoriesCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USER_CATEGORIES_ID!,
+    menuCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USER_MENUS_ID!,
+    customizationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USER_CUSTOMIZATIONS_ID!,
+    menuCustomizationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USER_MENU_CUSTOMIZATIONS_ID!,
+    bucketId: process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!,
 };
 
 export const client = new Client();
 
 client
-    .setEndpoint(appwriteConfig.endpoint)
-    .setProject(appwriteConfig.projectId)
-    .setPlatform(appwriteConfig.platform);
+.setEndpoint(appwriteConfig.endpoint)
+.setProject(appwriteConfig.projectId)
+.setPlatform(appwriteConfig.platform);
 
 export const account = new Account(client);
 export const databases = new Databases(client);
+export const storage = new Storage(client);
 export const avatars = new Avatars(client);
+export const tablesDB = new TablesDB(client);
 
 export const createUser = async ({ email, password, name }: CreateUserParams) => {
     try {
@@ -68,3 +75,39 @@ export const getCurrentUser = async () => {
         throw new Error(error as string);
     }
 };
+
+export const getMenu = async ({ category, query } : GetMenuParams) => {
+    try {
+        const queries: string[] = [];
+        if (category) {
+            queries.push(Query.equal('categories', category));
+        }
+
+        if (query) {
+            queries.push(Query.search('name', query));
+        }
+
+        const menus = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.menuCollectionId,
+            queries,
+        });
+
+        return menus.rows;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
+
+export const getCategories = async () => {
+    try {
+        const categories = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.categoriesCollectionId,        
+        });
+
+        return categories.rows;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
